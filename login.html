@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login</title>
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --accent: #6c5ce7;
+      --muted: #6b7280;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(135deg,#eef2ff 0%, #f3f4f6 100%);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+    }
+    .card {
+      width: 360px;
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 6px 24px rgba(15,23,42,0.08);
+      padding: 28px;
+    }
+    h1 {
+      margin: 0 0 12px 0;
+      font-size: 20px;
+      color: #0f172a;
+    }
+    p.lead { margin: 0 0 18px 0; color: var(--muted); font-size: 14px; }
+    label { display:block; font-size: 13px; color:#111827; margin-bottom:6px; }
+    input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #e6e6e6;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .actions { display:flex; gap:8px; align-items:center; }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button[disabled] { opacity: 0.6; cursor: not-allowed; }
+    .link-btn {
+      background: transparent;
+      color: var(--accent);
+      border: 0;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .note { font-size: 13px; color: var(--muted); margin-top:12px;}
+    .error { color: var(--danger); font-size: 13px; margin-top:8px; }
+    .success { color: #16a34a; font-size: 13px; margin-top:8px; }
+    .spinner {
+      width: 16px; height: 16px; border-radius:50%;
+      border:2px solid rgba(255,255,255,0.25); border-top-color: rgba(255,255,255,0.9);
+      animation: spin 1s linear infinite; display:inline-block; vertical-align:middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-labelledby="login-heading">
+    <h1 id="login-heading">Sign in</h1>
+    <p class="lead">Enter your email and password to continue.</p>
+
+    <div id="form">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@example.com" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Your password" />
+
+      <div class="actions" style="margin-top:6px;">
+        <button id="signinBtn">Sign in</button>
+        <button id="signupBtn" class="link-btn" type="button">Create account</button>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+        <button id="guestBtn" class="link-btn" type="button" style="background:#f3f4f6; color:#111827; border-radius:8px; padding:8px 12px;">Continue as Guest</button>
+        <button id="anonBtn" class="link-btn" type="button" style="background:#fff0f0; color:var(--danger); border-radius:8px; padding:8px 12px;">Sign in anonymously</button>
+      </div>
+
+      <div id="message" aria-live="polite"></div>
+
+      <p class="note">By signing in you agree to the terms. For testing only: the anon key is used in the browser.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const SUPABASE_URL = 'https://xdgeqsiktkabdgavwyld.supabase.co'
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkZ2Vxc2lrdGthYmRnYXZ3eWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2NTQyNTgsImV4cCI6MjA4MDIzMDI1OH0.i1l8Bl1H1LMl3-HfBAHSsl6Vzo8MVbmMC7nGA4v1D0U'
+    const REDIRECT_ON_SUCCESS = 'cipherbackup.html'
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const emailEl = document.getElementById('email')
+    const passwordEl = document.getElementById('password')
+    const signinBtn = document.getElementById('signinBtn')
+    const signupBtn = document.getElementById('signupBtn')
+    const guestBtn = document.getElementById('guestBtn')
+    const anonBtn = document.getElementById('anonBtn')
+    const messageEl = document.getElementById('message')
+
+    function setMessage(msg, type = '') {
+      messageEl.innerHTML = ''
+      if (!msg) return
+      const div = document.createElement('div')
+      div.textContent = msg
+      div.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : '')
+      messageEl.appendChild(div)
+    }
+
+    async function checkUserInDB(userId) {
+      const { data, error } = await supabase
+        .from('userdata')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1)
+
+      if (error) throw error
+      return data?.length > 0
+    }
+
+    async function createUserdata(userId) {
+      const { data, error } = await supabase
+        .from('userdata')
+        .insert([{ user_id: userId, name: 'Guest', password: '' }])
+        .select()
+        .limit(1)
+      if (error) throw error
+      return data?.[0]
+    }
+
+    async function signIn(email, password) {
+      setMessage('')
+      signinBtn.disabled = true
+      signinBtn.innerHTML = '<span class="spinner"></span> Signing in'
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) {
+          setMessage(error.message, 'error')
+          return null
+        }
+        return data.user
+      } finally {
+        signinBtn.disabled = false
+        signinBtn.innerHTML = 'Sign in'
+      }
+    }
+
+    // ⬇️ SIGNUP WITHOUT EMAIL CONFIRMATION MESSAGE
+    async function signUp(email, password) {
+      setMessage('')
+      signupBtn.disabled = true
+      signupBtn.textContent = 'Creating...'
+
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: null }
+        })
+
+        if (error) {
+          setMessage(error.message, 'error')
+          return null
+        }
+
+        // No “check your email” message
+        setMessage('Account created successfully!', 'success')
+        return data.user
+      } finally {
+        signupBtn.disabled = false
+        signupBtn.textContent = 'Create account'
+      }
+    }
+
+    async function signInAnonymouslyAndEnsureUserdata() {
+      setMessage('')
+      anonBtn.disabled = true
+      anonBtn.innerHTML = '<span class="spinner"></span> Signing anonymously'
+
+      try {
+        const { data, error } = await supabase.auth.signInAnonymously()
+        if (error) {
+          setMessage('Anonymous sign-in failed: ' + error.message, 'error')
+          return null
+        }
+        const user = data.user
+        if (!user) {
+          setMessage('Anonymous sign-in returned no user.', 'error')
+          return null
+        }
+
+        // Check if userdata exists; create one for guests if not
+        try {
+          const exists = await checkUserInDB(user.id)
+          if (!exists) {
+            await createUserdata(user.id)
+          }
+        } catch (err) {
+          // ignore DB creation error but notify
+          console.error('userdata create error', err)
+          setMessage('Signed anonymously but failed to create userdata row.', 'error')
+          return user
+        }
+
+        setMessage('Signed in anonymously. Redirecting...', 'success')
+        setTimeout(() => { window.location.href = REDIRECT_ON_SUCCESS }, 700)
+        return user
+      } finally {
+        anonBtn.disabled = false
+        anonBtn.innerHTML = 'Sign in anonymously'
+      }
+    }
+
+    // Simpler guest flow that doesn't call signInAnonymously (for older SDKs)
+    // It creates a temporary DB record and proceeds — useful if anonymous sign-in isn't available.
+    async function guestOnlyFlow() {
+      setMessage('')
+      guestBtn.disabled = true
+      guestBtn.textContent = 'Creating guest...'
+
+      try {
+        // Create a guest record in userdata with a generated UUID player id placeholder
+        // NOTE: This doesn't create an auth session; it's just a DB row for anonymous tracking.
+        const tempId = crypto.randomUUID()
+        const { data, error } = await supabase
+          .from('userdata')
+          .insert([{ user_id: tempId, name: 'Guest', password: '' }])
+          .select()
+          .limit(1)
+
+        if (error) {
+          setMessage('Failed to create guest record: ' + error.message, 'error')
+          return null
+        }
+
+        setMessage('Guest record created. Proceeding without auth...', 'success')
+        // Optionally store the tempId locally to identify the guest later
+        localStorage.setItem('guest_user_id', tempId)
+        setTimeout(() => { window.location.href = REDIRECT_ON_SUCCESS }, 700)
+        return data?.[0]
+      } finally {
+        guestBtn.disabled = false
+        guestBtn.textContent = 'Continue as Guest'
+      }
+    }
+
+    signinBtn.addEventListener('click', async () => {
+      const email = emailEl.value.trim()
+      const password = passwordEl.value
+
+      if (!email || !password) {
+        setMessage('Please fill email and password', 'error')
+        return
+      }
+
+      const user = await signIn(email, password)
+      if (!user) return
+
+      setMessage('Signed in. Checking account in database...')
+
+      try {
+        const exists = await checkUserInDB(user.id)
+        if (exists) {
+          setMessage('Welcome! Redirecting...', 'success')
+          setTimeout(() => { window.location.href = REDIRECT_ON_SUCCESS }, 700)
+        } else {
+          setMessage('No matching userdata record found.', 'error')
+        }
+      } catch (err) {
+        setMessage('Error checking database.', 'error')
+      }
+    })
+
+    signupBtn.addEventListener('click', async () => {
+      const email = emailEl.value.trim()
+      const password = passwordEl.value
+      if (!email || !password) {
+        setMessage('Please fill email and password', 'error')
+        return
+      }
+      await signUp(email, password)
+    })
+
+    anonBtn.addEventListener('click', async () => {
+      await signInAnonymouslyAndEnsureUserdata()
+    })
+
+    guestBtn.addEventListener('click', async () => {
+      await guestOnlyFlow()
+    })
+
+    ;(async function autoCheckSession() {
+      const { data } = await supabase.auth.getSession()
+      const user = data?.session?.user
+      if (!user) return
+
+      setMessage('Existing session detected. Verifying...')
+
+      try {
+        const exists = await checkUserInDB(user.id)
+        if (exists) {
+          setMessage('Welcome back. Redirecting...', 'success')
+          setTimeout(() => { window.location.href = REDIRECT_ON_SUCCESS }, 700)
+        } else {
+          setMessage('Signed in but no userdata row found.', 'error')
+        }
+      } catch (err) {
+        setMessage('Error checking database.', 'error')
+      }
+    })()
+  </script>
+</body>
+</html>

@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cipher Chat Simulation - Dual User</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .users-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .user-panel {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-header {
+            padding: 15px 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user1-header {
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+        }
+
+        .user2-header {
+            background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+        }
+
+        .controls {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .control-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input {
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .chat-area {
+            height: 350px;
+            overflow-y: auto;
+            padding: 15px;
+            background: white;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-sent {
+            text-align: right;
+        }
+
+        .message-received {
+            text-align: left;
+        }
+
+        .message-bubble {
+            display: inline-block;
+            padding: 12px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .message-bubble:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .bubble-sent {
+            background: #2196f3;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bubble-received {
+            background: #e0e0e0;
+            color: #333;
+            border-bottom-left-radius: 5px;
+        }
+
+        .bubble-locked {
+            background: #ffeb3b;
+            color: #333;
+            border: 2px dashed #fbc02d;
+        }
+
+        .message-info {
+            font-size: 11px;
+            margin-bottom: 5px;
+            opacity: 0.7;
+        }
+
+        .message-label {
+            font-size: 10px;
+            font-weight: 600;
+            opacity: 0.9;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        .lock-icon {
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .click-hint {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .input-area {
+            padding: 15px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 25px;
+            font-size: 14px;
+        }
+
+        .send-btn {
+            padding: 12px 25px;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .user1-btn {
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+        }
+
+        .user2-btn {
+            background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
+        }
+
+        .stranger-panel {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .stranger-header {
+            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+            padding: 15px 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stranger-chat {
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .stranger-message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .stranger-bubble {
+            display: inline-block;
+            padding: 12px 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            background: #ffcdd2;
+            color: #c62828;
+            word-wrap: break-word;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .stranger-bubble:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .cipher-info {
+            background: #fff3cd;
+            padding: 10px 15px;
+            font-size: 12px;
+            color: #856404;
+            border-top: 2px solid #ffc107;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-info {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: #1976d2;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .decrypted-message {
+            background: #c8e6c9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .error-message {
+            background: #ffcdd2;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid #f44336;
+            color: #c62828;
+        }
+
+        @media (max-width: 1024px) {
+            .users-container {
+                grid-template-columns: 1fr;
+            }
+
+            .control-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .message-content {
+            margin-top: 3px;
+        }
+
+        .info-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1>🔐 Cipher Chat Simulation - Dual User Mode</h1>
+            <p>Click on any encrypted message to decrypt it with a key</p>
+        </div>
+
+        <div class="users-container">
+            <!-- USER 1 -->
+            <div class="user-panel">
+                <div class="user-header user1-header">
+                    <span>👤 USER 1 (Alice)</span>
+                    <span class="info-badge">Sender/Receiver</span>
+                </div>
+                <div class="controls">
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Select Cipher</label>
+                            <select id="cipher1">
+                                <option value="shift">Shift Cipher</option>
+                                <option value="vigenere">Vigenère Cipher</option>
+                                <option value="playfair">Playfair Cipher</option>
+                                <option value="railfence">Rail Fence Cipher</option>
+                                <option value="columnar">Columnar Transposition</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label>Encryption Key</label>
+                            <input type="text" id="key1" placeholder="Enter key">
+                        </div>
+                    </div>
+                </div>
+                <div class="cipher-info" id="info1">Shift each letter by a fixed number</div>
+                <div class="chat-area" id="chat1"></div>
+                <div class="input-area">
+                    <input type="text" class="message-input" id="input1" placeholder="Type message...">
+                    <button class="send-btn user1-btn" id="send1">Send</button>
+                </div>
+            </div>
+
+            <!-- USER 2 -->
+            <div class="user-panel">
+                <div class="user-header user2-header">
+                    <span>👤 USER 2 (Bob)</span>
+                    <span class="info-badge">Sender/Receiver</span>
+                </div>
+                <div class="controls">
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Select Cipher</label>
+                            <select id="cipher2">
+                                <option value="shift">Shift Cipher</option>
+                                <option value="vigenere">Vigenère Cipher</option>
+                                <option value="playfair">Playfair Cipher</option>
+                                <option value="railfence">Rail Fence Cipher</option>
+                                <option value="columnar">Columnar Transposition</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label>Encryption Key</label>
+                            <input type="text" id="key2" placeholder="Enter key">
+                        </div>
+                    </div>
+                </div>
+                <div class="cipher-info" id="info2">Shift each letter by a fixed number</div>
+                <div class="chat-area" id="chat2"></div>
+                <div class="input-area">
+                    <input type="text" class="message-input" id="input2" placeholder="Type message...">
+                    <button class="send-btn user2-btn" id="send2">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STRANGER VIEW -->
+        <div class="stranger-panel">
+            <div class="stranger-header">
+                <span>👁️ STRANGER VIEW</span>
+                <span class="info-badge">Click messages to attempt decryption</span>
+            </div>
+            <div class="stranger-chat" id="strangerChat"></div>
+        </div>
+    </div>
+
+    <!-- Decryption Modal -->
+    <div id="decryptModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>🔓</span> Decrypt Message
+            </div>
+            <div class="modal-body">
+                <div class="modal-info">
+                    <strong>Cipher:</strong> <span id="modalCipher"></span><br>
+                    <strong>Encrypted:</strong> <span id="modalEncrypted"></span>
+                </div>
+                <input type="text" id="decryptKeyInput" class="modal-input" placeholder="Enter decryption key">
+                <div id="decryptResult"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-primary" id="decryptBtn">Decrypt</button>
+                <button class="modal-btn modal-btn-secondary" id="closeModalBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+  const SUPABASE_URL = 'https://xdgeqsiktkabdgavwyld.supabase.co'
+  // Put your anon key in a client-side env variable or directly here for testing only
+  const SUPABASE_ANON_KEY = 'your-public-anon-key-here'
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  // Example: check current user and fetch userdata
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    console.log('user', user)
+
+    const { data, error } = await supabase
+      .from('userdata')
+      .select('*')
+      .limit(100)
+
+    if (error) console.error('read error', error)
+    else console.log('userdata rows', data)
+  }
+
+  init()
+</script>
+    <script>
+    
+        // ==================== CIPHER IMPLEMENTATIONS ====================
+
+        function shiftEncrypt(text, shift) {
+            shift = parseInt(shift) % 26;
+            return text.split('').map(char => {
+                if (char.match(/[a-z]/i)) {
+                    const code = char.charCodeAt(0);
+                    const base = code >= 65 && code <= 90 ? 65 : 97;
+                    return String.fromCharCode(((code - base + shift) % 26) + base);
+                }
+                return char;
+            }).join('');
+        }
+
+        function shiftDecrypt(text, shift) {
+            return shiftEncrypt(text, 26 - (parseInt(shift) % 26));
+        }
+
+        function vigenereEncrypt(text, key) {
+            key = key.toUpperCase().replace(/[^A-Z]/g, '');
+            if (!key) return text;
+            
+            let result = '';
+            let keyIndex = 0;
+            
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char.match(/[a-z]/i)) {
+                    const code = char.charCodeAt(0);
+                    const base = code >= 65 && code <= 90 ? 65 : 97;
+                    const shift = key[keyIndex % key.length].charCodeAt(0) - 65;
+                    result += String.fromCharCode(((code - base + shift) % 26) + base);
+                    keyIndex++;
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        function vigenereDecrypt(text, key) {
+            key = key.toUpperCase().replace(/[^A-Z]/g, '');
+            if (!key) return text;
+            
+            let result = '';
+            let keyIndex = 0;
+            
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char.match(/[a-z]/i)) {
+                    const code = char.charCodeAt(0);
+                    const base = code >= 65 && code <= 90 ? 65 : 97;
+                    const shift = key[keyIndex % key.length].charCodeAt(0) - 65;
+                    result += String.fromCharCode(((code - base - shift + 26) % 26) + base);
+                    keyIndex++;
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        function createPlayfairMatrix(key) {
+            key = key.toUpperCase().replace(/[^A-Z]/g, '').replace(/J/g, 'I');
+            const matrix = [];
+            const used = new Set();
+            const alphabet = 'ABCDEFGHIKLMNOPQRSTUVWXYZ';
+            
+            for (const char of key) {
+                if (!used.has(char)) {
+                    matrix.push(char);
+                    used.add(char);
+                }
+            }
+            
+            for (const char of alphabet) {
+                if (!used.has(char)) {
+                    matrix.push(char);
+                }
+            }
+            
+            return matrix;
+        }
+
+        function findPosition(matrix, char) {
+            const index = matrix.indexOf(char);
+            return [Math.floor(index / 5), index % 5];
+        }
+
+        function playfairEncrypt(text, key) {
+            const matrix = createPlayfairMatrix(key);
+            text = text.toUpperCase().replace(/[^A-Z]/g, '').replace(/J/g, 'I');
+            
+            const pairs = [];
+            for (let i = 0; i < text.length; i += 2) {
+                let a = text[i];
+                let b = text[i + 1] || 'X';
+                if (a === b) b = 'X';
+                pairs.push([a, b]);
+            }
+            
+            let result = '';
+            for (const [a, b] of pairs) {
+                const [row1, col1] = findPosition(matrix, a);
+                const [row2, col2] = findPosition(matrix, b);
+                
+                if (row1 === row2) {
+                    result += matrix[row1 * 5 + (col1 + 1) % 5];
+                    result += matrix[row2 * 5 + (col2 + 1) % 5];
+                } else if (col1 === col2) {
+                    result += matrix[((row1 + 1) % 5) * 5 + col1];
+                    result += matrix[((row2 + 1) % 5) * 5 + col2];
+                } else {
+                    result += matrix[row1 * 5 + col2];
+                    result += matrix[row2 * 5 + col1];
+                }
+            }
+            
+            return result;
+        }
+
+        function playfairDecrypt(text, key) {
+            const matrix = createPlayfairMatrix(key);
+            text = text.toUpperCase().replace(/[^A-Z]/g, '');
+            
+            let result = '';
+            for (let i = 0; i < text.length; i += 2) {
+                const a = text[i];
+                const b = text[i + 1];
+                
+                const [row1, col1] = findPosition(matrix, a);
+                const [row2, col2] = findPosition(matrix, b);
+                
+                if (row1 === row2) {
+                    result += matrix[row1 * 5 + (col1 + 4) % 5];
+                    result += matrix[row2 * 5 + (col2 + 4) % 5];
+                } else if (col1 === col2) {
+                    result += matrix[((row1 + 4) % 5) * 5 + col1];
+                    result += matrix[((row2 + 4) % 5) * 5 + col2];
+                } else {
+                    result += matrix[row1 * 5 + col2];
+                    result += matrix[row2 * 5 + col1];
+                }
+            }
+            
+            return result;
+        }
+
+        function railfenceEncrypt(text, rails) {
+            rails = parseInt(rails);
+            if (rails < 2) rails = 2;
+            
+            const fence = Array(rails).fill('').map(() => []);
+            let rail = 0;
+            let direction = 1;
+            
+            for (const char of text) {
+                fence[rail].push(char);
+                rail += direction;
+                
+                if (rail === 0 || rail === rails - 1) {
+                    direction *= -1;
+                }
+            }
+            
+            return fence.flat().join('');
+        }
+
+        function railfenceDecrypt(text, rails) {
+            rails = parseInt(rails);
+            if (rails < 2) rails = 2;
+            
+            const fence = Array(rails).fill('').map(() => []);
+            const pattern = [];
+            let rail = 0;
+            let direction = 1;
+            
+            for (let i = 0; i < text.length; i++) {
+                pattern.push(rail);
+                rail += direction;
+                if (rail === 0 || rail === rails - 1) {
+                    direction *= -1;
+                }
+            }
+            
+            let index = 0;
+            for (let r = 0; r < rails; r++) {
+                for (let i = 0; i < pattern.length; i++) {
+                    if (pattern[i] === r) {
+                        fence[r].push(text[index++]);
+                    }
+                }
+            }
+            
+            let result = '';
+            rail = 0;
+            direction = 1;
+            const indices = Array(rails).fill(0);
+            
+            for (let i = 0; i < text.length; i++) {
+                result += fence[rail][indices[rail]++];
+                rail += direction;
+                if (rail === 0 || rail === rails - 1) {
+                    direction *= -1;
+                }
+            }
+            
+            return result;
+        }
+
+        function columnarEncrypt(text, key) {
+            key = key.toUpperCase().replace(/[^A-Z]/g, '');
+            if (!key) return text;
+            
+            const numCols = key.length;
+            const numRows = Math.ceil(text.length / numCols);
+            
+            const grid = [];
+            let index = 0;
+            for (let r = 0; r < numRows; r++) {
+                const row = [];
+                for (let c = 0; c < numCols; c++) {
+                    row.push(text[index++] || 'X');
+                }
+                grid.push(row);
+            }
+            
+            const keyOrder = key.split('').map((char, i) => ({ char, i }))
+                .sort((a, b) => a.char.localeCompare(b.char))
+                .map(x => x.i);
+            
+            let result = '';
+            for (const col of keyOrder) {
+                for (const row of grid) {
+                    result += row[col];
+                }
+            }
+            
+            return result;
+        }
+
+        function columnarDecrypt(text, key) {
+            key = key.toUpperCase().replace(/[^A-Z]/g, '');
+            if (!key) return text;
+            
+            const numCols = key.length;
+            const numRows = Math.ceil(text.length / numCols);
+            
+            const keyOrder = key.split('').map((char, i) => ({ char, i }))
+                .sort((a, b) => a.char.localeCompare(b.char))
+                .map(x => x.i);
+            
+            const grid = Array(numRows).fill(0).map(() => Array(numCols).fill(''));
+            
+            let index = 0;
+            for (const col of keyOrder) {
+                for (let r = 0; r < numRows; r++) {
+                    grid[r][col] = text[index++] || '';
+                }
+            }
+            
+            let result = '';
+            for (const row of grid) {
+                result += row.join('');
+            }
+            
+            return result.replace(/X+$/, '');
+        }
+
+        // ==================== APPLICATION LOGIC ====================
+
+        const messages = [];
+        let currentDecryptMessage = null;
+
+        const cipherDescriptions = {
+            shift: 'Shift each letter by a fixed number (e.g., key=3)',
+            vigenere: 'Use keyword to shift letters (e.g., key=SECRET)',
+            playfair: '5×5 matrix encryption (e.g., key=MONARCHY)',
+            railfence: 'Zigzag pattern (e.g., key=3 rails)',
+            columnar: 'Column transposition (e.g., key=ZEBRA)'
+        };
+
+        function encryptMessage(text, cipher, key) {
+            try {
+                switch(cipher) {
+                    case 'shift': return shiftEncrypt(text, key);
+                    case 'vigenere': return vigenereEncrypt(text, key);
+                    case 'playfair': return playfairEncrypt(text, key);
+                    case 'railfence': return railfenceEncrypt(text, key);
+                    case 'columnar': return columnarEncrypt(text, key);
+                    default: return text;
+                }
+            } catch(e) {
+                return text;
+            }
+        }
+
+        function decryptMessage(text, cipher, key) {
+            try {
+                switch(cipher) {
+                    case 'shift': return shiftDecrypt(text, key);
+                    case 'vigenere': return vigenereDecrypt(text, key);
+                    case 'playfair': return playfairDecrypt(text, key);
+                    case 'railfence': return railfenceDecrypt(text, key);
+                    case 'columnar': return columnarDecrypt(text, key);
+                    default: return text;
+                }
+            } catch(e) {
+                throw new Error('Decryption failed');
+            }
+        }
+
+        function formatTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function sendMessage(userId) {
+            const input = document.getElementById(`input${userId}`);
+            const cipher = document.getElementById(`cipher${userId}`).value;
+            const key = document.getElementById(`key${userId}`).value.trim();
+            const text = input.value.trim();
+
+            if (!text) {
+                alert('Please enter a message!');
+                return;
+            }
+
+            if (!key) {
+                alert('Please enter an encryption key!');
+                return;
+            }
+
+            const encrypted = encryptMessage(text, cipher, key);
+
+            const message = {
+                id: Date.now(),
+                sender: userId,
+                senderName: userId === 1 ? 'Alice' : 'Bob',
+                original: text,
+                encrypted: encrypted,
+                cipher: cipher,
+                key: key,
+                time: formatTime(),
+                decrypted: {} // Track which users have decrypted
+            };
+
+            messages.push(message);
+            updateAllChats();
+            input.value = '';
+        }
+
+        function openDecryptModal(messageId, viewerUserId = null) {
+            const message = messages.find(m => m.id === messageId);
+            if (!message) return;
+
+            currentDecryptMessage = { message, viewerUserId };
+
+            document.getElementById('modalCipher').innerText = message.cipher;
+            document.getElementById('modalEncrypted').innerText = message.encrypted;
+            document.getElementById('decryptKeyInput').value = '';
+            document.getElementById('decryptResult').innerHTML = '';
+
+            // Show modal
+            document.getElementById('decryptModal').style.display = 'block';
+            document.getElementById('decryptKeyInput').focus();
+        }
+
+        // Close modal
+        function closeDecryptModal() {
+            document.getElementById('decryptModal').style.display = 'none';
+            currentDecryptMessage = null;
+        }
+
+        // Handle decrypt button inside modal
+        document.getElementById('decryptBtn').addEventListener('click', () => {
+            const key = document.getElementById('decryptKeyInput').value.trim();
+            const resultEl = document.getElementById('decryptResult');
+
+            if (!currentDecryptMessage) {
+                resultEl.innerHTML = '<div class="error-message">No message selected.</div>';
+                return;
+            }
+
+            try {
+                const plain = decryptMessage(currentDecryptMessage.message.encrypted, currentDecryptMessage.message.cipher, key);
+                resultEl.innerHTML = `<div class="decrypted-message"><strong>Decrypted:</strong> ${plain}</div>`;
+
+                // Mark as decrypted for the viewer (if viewer provided)
+                const vid = currentDecryptMessage.viewerUserId;
+                if (vid) {
+                    currentDecryptMessage.message.decrypted[vid] = true;
+                }
+                updateAllChats();
+            } catch (e) {
+                resultEl.innerHTML = `<div class="error-message">Decryption failed: ${e.message || 'Invalid key'}</div>`;
+            }
+        });
+
+        document.getElementById('closeModalBtn').addEventListener('click', closeDecryptModal);
+
+        // Close modal when clicking outside content
+        document.getElementById('decryptModal').addEventListener('click', (ev) => {
+            if (ev.target === document.getElementById('decryptModal')) {
+                closeDecryptModal();
+            }
+        });
+
+        function createMessageBubble(msg, viewerId) {
+            const isSender = msg.sender === viewerId;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'message ' + (isSender ? 'message-sent' : 'message-received');
+
+            const info = document.createElement('div');
+            info.className = 'message-info';
+            info.innerText = `${msg.senderName} • ${msg.time} • ${msg.cipher.toUpperCase()}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble ' + (isSender ? 'bubble-sent' : 'bubble-received');
+            bubble.innerText = msg.encrypted;
+            bubble.title = 'Click to attempt decryption';
+            bubble.addEventListener('click', () => openDecryptModal(msg.id, viewerId));
+
+            wrapper.appendChild(info);
+            wrapper.appendChild(bubble);
+
+            // If the message was decrypted by this viewer, show decrypted text
+            if (viewerId && msg.decrypted && msg.decrypted[viewerId]) {
+                const decryptedDiv = document.createElement('div');
+                decryptedDiv.className = 'message-label';
+                decryptedDiv.innerText = `Decrypted: ${msg.original}`;
+                wrapper.appendChild(decryptedDiv);
+            }
+
+            return wrapper;
+        }
+
+        function updateAllChats() {
+            const chat1 = document.getElementById('chat1');
+            const chat2 = document.getElementById('chat2');
+            const stranger = document.getElementById('strangerChat');
+
+            chat1.innerHTML = '';
+            chat2.innerHTML = '';
+            stranger.innerHTML = '';
+
+            for (const msg of messages) {
+                // Add to user 1 view
+                chat1.appendChild(createMessageBubble(msg, 1));
+
+                // Add to user 2 view
+                chat2.appendChild(createMessageBubble(msg, 2));
+
+                // Stranger view: no viewer id provided
+                const strangerBubble = document.createElement('div');
+                strangerBubble.className = 'stranger-message';
+
+                const sb = document.createElement('div');
+                sb.className = 'stranger-bubble';
+                sb.innerText = msg.encrypted;
+                sb.title = `${msg.cipher.toUpperCase()} • Click to attempt decryption`;
+                sb.addEventListener('click', () => openDecryptModal(msg.id, null));
+
+                const meta = document.createElement('div');
+                meta.className = 'message-info';
+                meta.innerText = `${msg.senderName} • ${msg.time}`;
+
+                strangerBubble.appendChild(meta);
+                strangerBubble.appendChild(sb);
+                stranger.appendChild(strangerBubble);
+            }
+
+            // Auto-scroll to bottom for each
+            chat1.scrollTop = chat1.scrollHeight;
+            chat2.scrollTop = chat2.scrollHeight;
+            stranger.scrollTop = stranger.scrollHeight;
+        }
+
+        // Wire up send buttons
+        document.getElementById('send1').addEventListener('click', () => sendMessage(1));
+        document.getElementById('send2').addEventListener('click', () => sendMessage(2));
+
+        // Update cipher info text when selection changes
+        document.getElementById('cipher1').addEventListener('change', (e) => {
+            document.getElementById('info1').innerText = cipherDescriptions[e.target.value] || '';
+        });
+        document.getElementById('cipher2').addEventListener('change', (e) => {
+            document.getElementById('info2').innerText = cipherDescriptions[e.target.value] || '';
+        });
+
+        // Initialize info texts
+        document.getElementById('info1').innerText = cipherDescriptions[document.getElementById('cipher1').value];
+        document.getElementById('info2').innerText = cipherDescriptions[document.getElementById('cipher2').value];
+
+        // Initial render (in case there are preloaded messages)
+        updateAllChats();
+
+    </script>
+    </body>
+    </html>
